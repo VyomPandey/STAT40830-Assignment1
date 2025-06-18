@@ -1,0 +1,197 @@
+---
+title: "STAT40830 - Assignment 1 - Data Analysis of Economic, Social, and Environmental Indicators"
+subtitle: "Understanding Global Trends Across Multiple Dimensions"
+author: "Vyom Pandey - 24203476"
+date: "June 11, 2025"
+format: 
+  revealjs:
+    theme: moon
+execute:
+  error: false
+  message: false
+  warning: false
+editor: visual
+smaller: true
+center: true
+---
+
+```{r setup, echo=FALSE}
+library(data.table)
+library(ggplot2)
+```
+
+## Introduction
+
+This presentation analyzes indicators related to economics, health, environment, and development across three countries: Germany, Ireland, and the United States. We will use the `data.table` package for fast and efficient data handling.
+
+In this analysis, we compare **three diverse countries**—Germany (DEU), Ireland (IRL), and the United States (USA)—across **economic**, **health**, and **environmental** indicators.\
+Our goals are to:
+
+1.  **Ingest** clean indicator data for each country.
+
+2.  **Explore** structure, coverage, and key metrics.
+
+3.  **Visualize** trends in life expectancy, GDP per capita, and CO₂ emissions.
+
+4.  **Summarize** insights and discuss limitations.
+
+## Loading and Preparing the Data -1
+
+First, we **import** each country’s CSV file into a `data.table`. Then we **standardize** each table by:
+
+-   Converting categorical columns (`Country Name`, `Country ISO3`, `Indicator Name`, `Indicator Code`) into **factors** for efficient grouping.
+
+-   Casting `Year` to **integer** and `Value` to **numeric**, ensuring plots and calculations work correctly.
+
+-   Adding a `source` column so we always know which country each row came from.
+
+```{r, warning=FALSE, echo=TRUE}
+deu <- fread("indicators_deu.csv")
+irl <- fread("indicators_irl.csv")
+usa <- fread("indicators_usa.csv")
+datasets <- list(deu = deu, irl = irl, usa = usa)
+```
+
+## Loading and Preparing the Data - 2
+
+```{r, echo=TRUE}
+for (name in names(datasets)) {
+  dt <- datasets[[name]]
+  factor_cols <- c("Country Name", "Country ISO3", "Indicator Name", "Indicator Code")
+  for (col in factor_cols) {
+    set(dt, j = col, value = as.factor(dt[[col]]))
+  }
+  set(dt, j = "Year", value = as.integer(dt[["Year"]]))
+  set(dt, j = "Value", value = as.numeric(dt[["Value"]]))
+  set(dt, j = "source", value = toupper(name))
+  datasets[[name]] <- dt
+}
+```
+
+## Combining All Countries
+
+Now that each table is standardized, we **reassign** them to individual variables and then **merge** all three into one large `data.table` called `combined`. This lets us run cross-country comparisons in a single step.
+
+```{r, echo=TRUE}
+deu <- datasets$deu
+irl <- datasets$irl
+usa <- datasets$usa
+combined <- rbindlist(list(deu, irl, usa))
+dim(combined)
+head(combined)
+```
+
+## Number of Indicators per Country and Time Span of Data
+
+Here we count **distinct country–indicator–year** records to see if each country has a similar breadth of indicators and check the **range of years** covered in our combined dataset—a crucial step to ensure we compare the same time periods.
+
+```{r, echo=TRUE}
+combined[, .N, by = .(`Country Name`)]
+range(combined$Year, na.rm = TRUE)
+```
+
+## Top 10 Most-Frequent Indicators
+
+To focus our analysis on widely reported metrics, we list the **10 indicators** with the most observations.
+
+```{r, echo=TRUE}
+combined[, .N, by = `Indicator Name`][order(-N)][1:10]
+```
+
+From the list we will be using:
+
+Life Expectancy at Birth, GDP per Capita and CO2 Emissions per Capita.
+
+## Focus Area 1: Life Expectancy at Birth
+
+We extract the **“Life expectancy at birth, total (years)”** indicator for each country and compute the **annual average** across any subcategories.
+
+```{r, echo=TRUE}
+life <- combined[`Indicator Name` == "Life expectancy at birth, total (years)"]
+life_avg <- life[, .(avg_life = mean(Value, na.rm = TRUE)), keyby = .(`Country Name`, Year)]
+```
+
+## Plot: Life Expectancy Over Time
+
+Here we look for diverging or converging trends over time, any sudden dips could indicate crises (e.g., pandemics, conflicts) and comparing countries side-by-side highlights relative progress.
+
+```{r, echo=TRUE}
+ggplot(life_avg, aes(x = Year, y = avg_life, color = `Country Name`)) +
+  geom_line(size = 1.1) +
+  labs(title = "Life Expectancy at Birth", y = "Years") +
+  theme_minimal()
+```
+
+## Insights
+
+-   **Steady upward trajectory (1960–2025):** All three countries have seen uninterrupted gains in average life expectancy—from around 71 years in 1960 to roughly 81–83 years by 2025.
+
+-   **Convergence and recent divergence:** From 1960 through the mid-1990s, Germany (red), Ireland (green) and the U.S. (blue) rose almost in lockstep. Since 2000, Ireland pulls slightly ahead, reaching about 83 years by 2025, while Germany and the U.S. plateau around 81–82 years. <!-- -->
+
+-   **U.S. recent dip:** A small downturn in U.S. life expectancy around 2020 likely reflects the combined impacts of the opioid crisis and the COVID-19 pandemic, whereas Germany and Ireland remained more resilient.
+
+## Focus Area 2: GDP per Capita
+
+Next, we isolate **“GDP per capita (current US\$)”**, then calculate the **yearly average** for each country.
+
+```{r, echo=TRUE}
+gdp <- combined[`Indicator Name` == "GDP per capita (current US$)"]
+gdp_avg <- gdp[, .(avg_gdp = mean(Value, na.rm = TRUE)), keyby = .(`Country Name`, Year)]
+```
+
+We are looking at GDP per Capita as it is a standard measure of economic output per person, adjusted for population size—crucial for comparing living standards.
+
+## Plot: GDP per Capita
+
+Here we will observe steeper slopes indicate faster economic growth and vice versa. Plateaus or declines may coincide with recessions or shocks.
+
+```{r, echo=TRUE}
+ggplot(gdp_avg, aes(x = Year, y = avg_gdp, color = `Country Name`)) +
+  geom_line(size = 1.1) +
+  labs(title = "GDP per Capita", y = "USD") +
+  theme_minimal()
+```
+
+## Insights
+
+-   **Long-term growth:** All three economies have grown dramatically in per-person GDP—from under \$5 000 in 1960 to tens of thousands today. <!-- -->
+-   **Ireland’s “Celtic Tiger” surge:** After 1995, Ireland’s curve steepens, surging past both Germany and the U.S. by the 2010s and reaching nearly \$100 000 per person by 2025. <!-- -->
+-   **U.S. vs. Germany:** The U.S. maintains a steady linear rise, ending near \$80 000 per capita, while Germany’s growth is more modest—around \$55 000 by 2025—reflecting its larger population and more tempered economic expansion.
+
+## Focus Area 3: CO₂ Emissions per Capita
+
+For environmental impact, we use **“Carbon dioxide (CO2) emissions excluding LULUCF per capita (t CO2e/capita)”**. We compute each country’s **average** CO₂ emissions per person.
+
+Note: LULUCF stands for “Land Use, Land-Use Change, and Forestry.” Excluding it focuses on industrial and energy-sector emissions.
+
+```{r, echo=TRUE}
+co2 <- combined[`Indicator Name` == "Carbon dioxide (CO2) emissions excluding LULUCF per capita (t CO2e/capita)"]
+co2_avg <- co2[, .(avg_CO2 = mean(Value, na.rm = TRUE)), keyby = .(`Country Name`)]
+print(co2_avg)
+```
+
+-   **United States leads in emissions:** At almost **19.2 t CO₂e per person**, the U.S. emits far more per capita than Germany or Ireland, underscoring its energy-intensive economy. <!-- -->
+-   **Germany in the middle:** With **11.6 t CO₂e**, Germany’s industrial base and high living standards carry a significant carbon footprint—but still about 40 % lower than the U.S. <!-- -->
+-   **Ireland the lowest:** Ireland’s **8.7 t CO₂e** per capita, despite its high GDP, suggests greater reliance on lower-carbon energy sources or more efficient practices.
+
+## Overall Insights
+
+-   **Prosperity vs. emissions trade-off:** The U.S. achieves high life expectancy and GDP at the cost of very high per-person emissions.
+
+-   **Germany’s balance:** Germany pairs a robust life expectancy and mid-range GDP with moderate CO₂ output—a model of industrial efficiency and environmental regulation.
+
+-   **Ireland’s outperformance:** Ireland delivers top-tier life expectancy and GDP growth with relatively lower emissions per capita, reflecting the high-tech, services-led nature of its economy.
+
+These patterns highlight how different development paths—industrial heavy-industry (U.S.), engineering-led manufacturing (Germany), and services-and-tech growth (Ireland)—manifest in health, wealth, and environmental impact.
+
+## Conclusion
+
+By leveraging **`data.table`** for efficient data handling and **`ggplot2`** for clear visualizations, we have:
+
+-   Compared **health**, **economic**, and **environmental** trends across three major economies.
+
+-   Identified key patterns and trade-offs (e.g., prosperity vs. emissions).
+
+-   Highlighted data gaps and avenues for deeper analysis.
+
+# Thank you!
