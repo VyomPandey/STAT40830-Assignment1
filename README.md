@@ -42,18 +42,6 @@ This repository contains the Quarto presentation and supporting materials for **
 
 ---
 
-## Project Structure
-STAT40830-Assignment1/
-├── STAT40830_Assignment1.qmd # Quarto source file for slides
-├── STAT40830_Assignment1.Rproj # RStudio project file
-├── .gitignore # Files ignored by Git
-├── indicators_deu.csv # Germany data
-├── indicators_irl.csv # Ireland data
-├── indicators_usa.csv # USA data
-└── README.md # This file
-
----
-
 ## Commit Summary
 
 - Initial commit with data and setup
