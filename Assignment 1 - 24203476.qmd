@@ -174,6 +174,36 @@ print(co2_avg)
 -   **Germany in the middle:** With **11.6 t CO₂e**, Germany’s industrial base and high living standards carry a significant carbon footprint—but still about 40 % lower than the U.S. <!-- -->
 -   **Ireland the lowest:** Ireland’s **8.7 t CO₂e** per capita, despite its high GDP, suggests greater reliance on lower-carbon energy sources or more efficient practices.
 
+## Correlation Analysis Between Indicators
+
+```{r}
+# Prepare a wide table with yearly averages per country
+combined_avg <- combined[
+  `Indicator Name` %in% c("Life expectancy at birth, total (years)",
+                          "GDP per capita (current US$)",
+                          "Carbon dioxide (CO2) emissions excluding LULUCF per capita (t CO2e/capita)")
+][
+  , .(avg_value = mean(Value, na.rm = TRUE)),
+  by = .(`Country Name`, `Indicator Name`, Year)
+][
+  , dcast(.SD, `Country Name` + Year ~ `Indicator Name`, value.var = "avg_value")
+]
+
+# Rename for easier handling
+setnames(combined_avg,
+         old = c("Life expectancy at birth, total (years)",
+                 "GDP per capita (current US$)",
+                 "Carbon dioxide (CO2) emissions excluding LULUCF per capita (t CO2e/capita)"),
+         new = c("LifeExpectancy", "GDPperCapita", "CO2perCapita"))
+
+# Plot GDP vs Life Expectancy
+ggplot(combined_avg, aes(x = GDPperCapita, y = LifeExpectancy, color = `Country Name`)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "GDP vs Life Expectancy", x = "GDP per Capita (USD)", y = "Life Expectancy (Years)") +
+  theme_minimal()
+```
+
 ## Overall Insights
 
 -   **Prosperity vs. emissions trade-off:** The U.S. achieves high life expectancy and GDP at the cost of very high per-person emissions.
