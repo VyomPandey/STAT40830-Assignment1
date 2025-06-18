@@ -1,4 +1,3 @@
-# STAT40830-Homework1
 # STAT40830 - Assignment 1
 
 **Author:** Vyom Pandey (ID: 24203476)  
