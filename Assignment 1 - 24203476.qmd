@@ -177,7 +177,6 @@ print(co2_avg)
 ## Correlation Analysis Between Indicators
 
 ```{r}
-# Prepare a wide table with yearly averages per country
 combined_avg <- combined[
   `Indicator Name` %in% c("Life expectancy at birth, total (years)",
                           "GDP per capita (current US$)",
@@ -189,18 +188,39 @@ combined_avg <- combined[
   , dcast(.SD, `Country Name` + Year ~ `Indicator Name`, value.var = "avg_value")
 ]
 
-# Rename for easier handling
 setnames(combined_avg,
          old = c("Life expectancy at birth, total (years)",
                  "GDP per capita (current US$)",
                  "Carbon dioxide (CO2) emissions excluding LULUCF per capita (t CO2e/capita)"),
          new = c("LifeExpectancy", "GDPperCapita", "CO2perCapita"))
 
-# Plot GDP vs Life Expectancy
 ggplot(combined_avg, aes(x = GDPperCapita, y = LifeExpectancy, color = `Country Name`)) +
   geom_point(alpha = 0.6) +
   geom_smooth(method = "lm", se = FALSE) +
   labs(title = "GDP vs Life Expectancy", x = "GDP per Capita (USD)", y = "Life Expectancy (Years)") +
+  theme_minimal()
+```
+
+## Multi-Indicator Time Series Comparison
+
+```{r}
+multi_indicators <- combined[
+  `Indicator Name` %in% c("Life expectancy at birth, total (years)",
+                          "GDP per capita (current US$)",
+                          "Carbon dioxide (CO2) emissions excluding LULUCF per capita (t CO2e/capita)")
+][
+  , .(avg_value = mean(Value, na.rm = TRUE)), by = .(`Country Name`, `Indicator Name`, Year)
+]
+
+multi_indicators[, scaled_value := (avg_value - min(avg_value, na.rm = TRUE)) /
+                                      (max(avg_value, na.rm = TRUE) - min(avg_value, na.rm = TRUE)),
+                 by = .(`Country Name`, `Indicator Name`)]
+
+ggplot(multi_indicators, aes(x = Year, y = scaled_value, color = `Indicator Name`)) +
+  geom_line(size = 1) +
+  facet_wrap(~ `Country Name`, ncol = 1) +
+  labs(title = "Normalized Indicator Trends Over Time",
+       y = "Scaled Value (0–1)", x = "Year") +
   theme_minimal()
 ```
 
