@@ -3,7 +3,7 @@
 
 **Author:** Vyom Pandey (ID: 24203476)  
 **Course:** STAT40830  
-**Date:** June 11, 2025  
+**Date:** June 18, 2025  
 
 ## Overview
 
@@ -53,10 +53,3 @@ This repository contains the Quarto presentation and supporting materials for **
 ## Acknowledgments
 
 Data derived from World Bank and international development indicator datasets.  
-Special thanks to instructors and TAs for guidance on project design and feedback.
-
----
-
-## 📝 License
-
-This repository is for academic purposes and does not include a formal license.
